@@ -1,0 +1,355 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (C) 2026 Danila Tikhonov <danila@jiaxyga.com>
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	compatible = "hisilicon,hi3798cv300";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	clocks {
+		xtal_clk: clock-24m {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <24000000>;
+			clock-output-names = "clk24M";
+		};
+
+		/* PL011 UART */
+		clk_75m: clock-75m {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <75000000>;
+			clock-output-names = "clk75M";
+		};
+	};
+
+	psci: psci {
+		compatible = "arm,psci-0.2";
+		method = "smc";
+	};
+
+	cpus {
+		#address-cells = <2>;
+		#size-cells = <0>;
+
+		cpu0: cpu@0 {
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+			reg = <0x0 0x0>;
+			enable-method = "psci";
+
+			next-level-cache = <&l2_cache>;
+		};
+
+		cpu1: cpu@1 {
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+			reg = <0x0 0x1>;
+			enable-method = "psci";
+
+			next-level-cache = <&l2_cache>;
+		};
+
+		cpu2: cpu@2 {
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+			reg = <0x0 0x2>;
+			enable-method = "psci";
+
+			next-level-cache = <&l2_cache>;
+		};
+
+		cpu3: cpu@3 {
+			compatible = "arm,cortex-a53";
+			device_type = "cpu";
+			reg = <0x0 0x3>;
+			enable-method = "psci";
+
+			next-level-cache = <&l2_cache>;
+		};
+
+		cpu-map {
+			cluster0 {
+				core0 {
+					cpu = <&cpu0>;
+				};
+
+				core1 {
+					cpu = <&cpu1>;
+				};
+
+				core2 {
+					cpu = <&cpu2>;
+				};
+
+				core3 {
+					cpu = <&cpu3>;
+				};
+			};
+		};
+
+		l2_cache: l2-cache {
+			compatible = "cache";
+			cache-level = <2>;
+			cache-unified;
+		};
+	};
+
+	gic: interrupt-controller@f1001000 {
+		compatible = "arm,gic-400";
+		reg = <0x0 0xf1001000 0x0 0x1000>,  /* GICD */
+		      <0x0 0xf1002000 0x0 0x100>;   /* GICC */
+
+		#address-cells = <0>;
+		#interrupt-cells = <3>;
+		interrupt-controller;
+	};
+
+	memory: memory@0 {
+		device_type = "memory";
+		/* We expect the bootloader to fill in the size */
+		reg = <0x0 0x00000000 0x0 0x00000000>;
+	};
+
+	pmu {
+		compatible = "arm,cortex-a53-pmu";
+		interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 9 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-affinity = <&cpu0>,
+				     <&cpu1>,
+				     <&cpu2>,
+				     <&cpu3>;
+	};
+
+	soc: soc@f0000000 {
+		compatible = "simple-bus";
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		ranges = <0x0 0x0 0xf0000000 0x10000000>;
+
+		watchdog0: watchdog@8a2c000 {
+			compatible = "arm,sp805",
+				     "arm,primecell";
+			reg = <0x08a2c000 0x1000>;
+
+			arm,primecell-periphid = <0x00141805>;
+
+			clocks = <&xtal_clk>,
+				 <&xtal_clk>;
+			clock-names = "wdog_clk",
+				      "apb_pclk";
+		};
+
+		uart0: serial@8b00000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b00000 0x1000>;
+			interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;
+
+			clocks = <&clk_75m>,
+				 <&clk_75m>;
+			clock-names = "uartclk",
+				      "apb_pclk";
+
+			status = "disabled";
+		};
+
+		uart2: serial@8b02000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b02000 0x1000>;
+			interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;
+
+			clocks = <&clk_75m>,
+				 <&clk_75m>;
+			clock-names = "uartclk",
+				      "apb_pclk";
+
+			status = "disabled";
+		};
+
+		uart3: serial@8b03000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b03000 0x1000>;
+			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;
+
+			clocks = <&clk_75m>,
+				 <&clk_75m>;
+			clock-names = "uartclk",
+				      "apb_pclk";
+
+			status = "disabled";
+		};
+
+		gpio0: gpio@8b20000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b20000 0x1000>;
+			interrupts = <GIC_SPI 108 IRQ_TYPE_LEVEL_HIGH>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			clocks = <&xtal_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		gpio1: gpio@8b21000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b21000 0x1000>;
+			interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_HIGH>;
+
+			arm,primecell-periphid = <0x00041061>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			clocks = <&xtal_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		gpio2: gpio@8b22000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b22000 0x1000>;
+			interrupts = <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			clocks = <&xtal_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		gpio3: gpio@8b23000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b23000 0x1000>;
+			interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_HIGH>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			clocks = <&xtal_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		gpio4: gpio@8b24000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b24000 0x1000>;
+			interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			clocks = <&xtal_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		gpio5: gpio@8004000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08004000 0x1000>;
+			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			clocks = <&xtal_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		gpio6: gpio@8b26000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b26000 0x1000>;
+			interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			clocks = <&xtal_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		gpio7: gpio@8b27000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b27000 0x1000>;
+			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			clocks = <&xtal_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		gpio8: gpio@8b28000 {
+			compatible = "arm,pl011",
+				     "arm,primecell";
+			reg = <0x08b28000 0x1000>;
+			interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			clocks = <&xtal_clk>;
+			clock-names = "apb_pclk";
+		};
+	};
+
+	timer {
+		compatible = "arm,armv8-timer";
+
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) |
+			      IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) |
+			      IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) |
+			      IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) |
+			      IRQ_TYPE_LEVEL_LOW)>;
+	};
+};
